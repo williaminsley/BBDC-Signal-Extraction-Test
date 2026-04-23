@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no"
+  />
+  <title>Signal Audit</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .audit-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .audit-zone {
+      min-height: 180px;
+      border: 2px dashed #cfd6e4;
+      border-radius: 10px;
+      background: #fff;
+      padding: 14px;
+      position: relative;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .audit-zone.scroll-zone {
+      overflow-y: auto;
+      max-height: 220px;
+      touch-action: pan-y;
+    }
+
+    .audit-zone.drag-zone {
+      min-height: 220px;
+    }
+
+    .zone-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .zone-note {
+      color: #666;
+      font-size: 0.95rem;
+      margin-bottom: 10px;
+    }
+
+    .scroll-content {
+      height: 600px;
+      padding-right: 6px;
+    }
+
+    .drag-handle {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: #3a6df0;
+      position: absolute;
+      left: 16px;
+      top: 70px;
+      touch-action: none;
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.9rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .stats-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+    }
+
+    .stats-table th,
+    .stats-table td {
+      text-align: left;
+      padding: 8px;
+      border-bottom: 1px solid #e6e9ef;
+      vertical-align: top;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #eef3ff;
+      color: #2d4db3;
+      font-size: 0.85rem;
+      margin: 3px 6px 3px 0;
+    }
+
+    .inline-actions {
+      display: grid;
+      gap: 10px;
+    }
+
+    .small {
+      font-size: 0.9rem;
+    }
+
+    #eventPreview,
+    #capabilityPreview {
+      max-height: 260px;
+      overflow: auto;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container">
+    <section class="screen active">
+      <h1>Browser Signal Audit</h1>
+      <p class="muted">
+        This page is for pre-release testing only. It checks which interaction and sensor signals are actually exposed by the browser/device.
+      </p>
+
+      <div class="card">
+        <h2 style="margin-top:0;">How to use this page</h2>
+        <p class="muted" style="margin:0;">
+          Work through each test area naturally for 10–20 seconds. At the end, export the audit log and compare support across devices and browsers.
+        </p>
+      </div>
+
+      <div class="card">
+        <h2 style="margin-top:0;">Session controls</h2>
+        <div class="inline-actions">
+          <button id="btnStartAudit" class="primary" style="margin-top:0;">Start Audit Session</button>
+          <button id="btnResetAudit" class="secondary">Reset Session</button>
+          <button id="btnExportJson" class="secondary">Export JSON</button>
+          <button id="btnExportCsv" class="secondary">Export CSV</button>
+        </div>
+        <p id="sessionStatus" class="muted" style="margin-top:12px;">Session not started.</p>
+      </div>
+
+      <div class="card">
+        <h2 style="margin-top:0;">Capabilities and metadata</h2>
+        <div id="capabilityPills"></div>
+        <div id="capabilityPreview" class="mono"></div>
+      </div>
+
+      <div class="card">
+        <h2 style="margin-top:0;">Permissions</h2>
+        <button id="btnRequestMotion" class="secondary">Request motion/orientation access</button>
+        <p id="permissionStatus" class="muted" style="margin-top:10px;">No permission request made yet.</p>
+      </div>
+
+      <div class="audit-grid">
+        <div class="card">
+          <div class="zone-title">Tap / pointer zone</div>
+          <div class="zone-note">Tap repeatedly, press and hold, and move short distances.</div>
+          <div id="tapZone" class="audit-zone"></div>
+        </div>
+
+        <div class="card">
+          <div class="zone-title">Swipe zone</div>
+          <div class="zone-note">Perform short and long swipes in different directions.</div>
+          <div id="swipeZone" class="audit-zone"></div>
+        </div>
+
+        <div class="card">
+          <div class="zone-title">Scroll zone</div>
+          <div class="zone-note">Scroll naturally up and down several times.</div>
+          <div id="scrollZone" class="audit-zone scroll-zone">
+            <div class="scroll-content">
+              <p>Scroll test content 1</p>
+              <p>Scroll test content 2</p>
+              <p>Scroll test content 3</p>
+              <p>Scroll test content 4</p>
+              <p>Scroll test content 5</p>
+              <p>Scroll test content 6</p>
+              <p>Scroll test content 7</p>
+              <p>Scroll test content 8</p>
+              <p>Scroll test content 9</p>
+              <p>Scroll test content 10</p>
+              <p>Scroll test content 11</p>
+              <p>Scroll test content 12</p>
+              <p>Scroll test content 13</p>
+              <p>Scroll test content 14</p>
+              <p>Scroll test content 15</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="zone-title">Drag zone</div>
+          <div class="zone-note">Drag the blue circle around the area.</div>
+          <div id="dragZone" class="audit-zone drag-zone">
+            <div id="dragHandle" class="drag-handle"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="zone-title">Text input zone</div>
+          <div class="zone-note">Type normally for a few seconds. Raw text should not be stored in this audit.</div>
+          <input
+            id="textInputZone"
+            class="input"
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="false"
+            autocapitalize="none"
+            inputmode="text"
+            enterkeyhint="done"
+            placeholder="Type here for keyboard signal testing"
+          />
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 style="margin-top:0;">Live stats</h2>
+        <div id="statsTableWrap"></div>
+      </div>
+
+      <div class="card">
+        <h2 style="margin-top:0;">Recent events preview</h2>
+        <div id="eventPreview" class="mono"></div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="signal-audit.js"></script>
+</body>
+</html>
