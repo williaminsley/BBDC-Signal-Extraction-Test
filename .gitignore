@@ -1,2 +1,4 @@
 signal_audit_*.json
 .venv/
+
+.DS_Store
