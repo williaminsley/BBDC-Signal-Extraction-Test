@@ -6,7 +6,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no"
   />
-  <title>Signal Audit</title>
+  <title>Signal Extraction Lab</title>
   <link rel="stylesheet" href="styles.css" />
   <style>
     .audit-grid {
@@ -24,6 +24,7 @@
       touch-action: none;
       user-select: none;
       -webkit-user-select: none;
+      overflow: hidden;
     }
 
     .audit-zone.scroll-zone {
@@ -33,7 +34,14 @@
     }
 
     .audit-zone.drag-zone {
+      min-height: 240px;
+    }
+
+    .audit-zone.pinch-zone {
       min-height: 220px;
+      background:
+        radial-gradient(circle at center, rgba(58,109,240,0.08), transparent 55%),
+        #fff;
     }
 
     .zone-title {
@@ -48,7 +56,7 @@
     }
 
     .scroll-content {
-      height: 600px;
+      height: 720px;
       padding-right: 6px;
     }
 
@@ -59,8 +67,9 @@
       background: #3a6df0;
       position: absolute;
       left: 16px;
-      top: 70px;
+      top: 82px;
       touch-action: none;
+      box-shadow: 0 10px 24px rgba(58, 109, 240, 0.25);
     }
 
     .mono {
@@ -103,9 +112,42 @@
       font-size: 0.9rem;
     }
 
+    .stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    .two-col {
+      display: grid;
+      gap: 12px;
+    }
+
+    @media (min-width: 860px) {
+      .two-col {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .editor-zone {
+      min-height: 140px;
+      border: 1px solid #d8deea;
+      border-radius: 10px;
+      padding: 12px;
+      background: #fff;
+      outline: none;
+    }
+
+    .status-box {
+      border: 1px solid #e6e9ef;
+      background: #fafbfe;
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+
     #eventPreview,
-    #capabilityPreview {
-      max-height: 260px;
+    #capabilityPreview,
+    #environmentPreview {
+      max-height: 280px;
       overflow: auto;
     }
   </style>
@@ -114,15 +156,15 @@
 <body>
   <main class="container">
     <section class="screen active">
-      <h1>Browser Signal Audit</h1>
+      <h1>Browser Signal Extraction Lab</h1>
       <p class="muted">
-        This page is for pre-release testing only. It checks which interaction and sensor signals are actually exposed by the browser/device.
+        This lab is for pre-release behavioural signal extraction. The aim is to expose as many browser/device signals as possible so we can judge which ones are genuinely available and usable for CA Prototype 2.
       </p>
 
       <div class="card">
         <h2 style="margin-top:0;">How to use this page</h2>
         <p class="muted" style="margin:0;">
-          Work through each test area naturally for 10–20 seconds. At the end, export the audit log and compare support across devices and browsers.
+          Start a session, grant optional permissions, then work through every zone naturally for 10–20 seconds each. Try taps, swipes, holds, multi-touch, drag, scroll, typing, edits, selection, paste/copy/cut if possible, orientation changes, and app switching. Export the log at the end.
         </p>
       </div>
 
@@ -144,27 +186,66 @@
       </div>
 
       <div class="card">
-        <h2 style="margin-top:0;">Permissions</h2>
-        <button id="btnRequestMotion" class="secondary">Request motion/orientation access</button>
-        <p id="permissionStatus" class="muted" style="margin-top:10px;">No permission request made yet.</p>
+        <h2 style="margin-top:0;">Environment snapshots</h2>
+        <div id="environmentPreview" class="mono"></div>
+      </div>
+
+      <div class="card">
+        <h2 style="margin-top:0;">Permissions and optional APIs</h2>
+        <div class="two-col">
+          <div class="stack">
+            <button id="btnRequestMotion" class="secondary">Request motion/orientation access</button>
+            <button id="btnRequestGeo" class="secondary">Request geolocation</button>
+            <button id="btnStartGenericSensors" class="secondary">Start generic sensor APIs</button>
+            <button id="btnStopGenericSensors" class="secondary">Stop generic sensor APIs</button>
+            <button id="btnTestVibration" class="secondary">Test vibration</button>
+          </div>
+
+          <div class="stack">
+            <div class="status-box">
+              <strong>Permission status</strong>
+              <p id="permissionStatus" class="muted" style="margin:8px 0 0 0;">No permission request made yet.</p>
+            </div>
+            <div class="status-box">
+              <strong>Battery status</strong>
+              <p id="batteryStatus" class="muted" style="margin:8px 0 0 0;">No battery snapshot yet.</p>
+            </div>
+            <div class="status-box">
+              <strong>Generic sensor status</strong>
+              <p id="genericSensorStatus" class="muted" style="margin:8px 0 0 0;">Generic sensors not started.</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="audit-grid">
         <div class="card">
           <div class="zone-title">Tap / pointer zone</div>
-          <div class="zone-note">Tap repeatedly, press and hold, and move short distances.</div>
+          <div class="zone-note">Tap repeatedly, press and hold, short moves, repeated presses, and leave/re-enter the zone.</div>
           <div id="tapZone" class="audit-zone"></div>
         </div>
 
         <div class="card">
           <div class="zone-title">Swipe zone</div>
-          <div class="zone-note">Perform short and long swipes in different directions.</div>
+          <div class="zone-note">Perform short and long swipes in multiple directions. On desktop, also move the mouse through the zone.</div>
           <div id="swipeZone" class="audit-zone"></div>
         </div>
 
         <div class="card">
+          <div class="zone-title">Pinch / multi-touch zone</div>
+          <div class="zone-note">Use two fingers if available. Try pinch in/out, rotate slightly, and lift one finger before the other.</div>
+          <div id="pinchZone" class="audit-zone pinch-zone"></div>
+        </div>
+
+        <div class="card">
+          <div class="zone-title">Wheel zone</div>
+          <div class="zone-note">On laptop/desktop, use wheel/trackpad scrolling and small/large gestures. On phone, normal touch events will still be captured.</div>
+          <div id="wheelZone" class="audit-zone"></div>
+        </div>
+
+        <div class="card">
           <div class="zone-title">Scroll zone</div>
-          <div class="zone-note">Scroll naturally up and down several times.</div>
+          <div class="zone-note">Scroll naturally up and down several times, including overscroll/bounce if the browser allows it.</div>
           <div id="scrollZone" class="audit-zone scroll-zone">
             <div class="scroll-content">
               <p>Scroll test content 1</p>
@@ -182,21 +263,26 @@
               <p>Scroll test content 13</p>
               <p>Scroll test content 14</p>
               <p>Scroll test content 15</p>
+              <p>Scroll test content 16</p>
+              <p>Scroll test content 17</p>
+              <p>Scroll test content 18</p>
+              <p>Scroll test content 19</p>
+              <p>Scroll test content 20</p>
             </div>
           </div>
         </div>
 
         <div class="card">
           <div class="zone-title">Drag zone</div>
-          <div class="zone-note">Drag the blue circle around the area.</div>
+          <div class="zone-note">Drag the blue circle around the area, including long drags, corners, and short corrections.</div>
           <div id="dragZone" class="audit-zone drag-zone">
             <div id="dragHandle" class="drag-handle"></div>
           </div>
         </div>
 
         <div class="card">
-          <div class="zone-title">Text input zone</div>
-          <div class="zone-note">Type normally for a few seconds. Raw text should not be stored in this audit.</div>
+          <div class="zone-title">Single-line text input</div>
+          <div class="zone-note">Type normally, backspace, hold keys, move cursor, select text, and submit.</div>
           <input
             id="textInputZone"
             class="input"
@@ -208,6 +294,35 @@
             enterkeyhint="done"
             placeholder="Type here for keyboard signal testing"
           />
+        </div>
+
+        <div class="card">
+          <div class="zone-title">Textarea input</div>
+          <div class="zone-note">Type across multiple lines, select ranges, delete chunks, paste if possible, and move the caret.</div>
+          <textarea
+            id="textAreaZone"
+            class="input"
+            rows="5"
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="false"
+            autocapitalize="none"
+            placeholder="Type multiple lines here"
+          ></textarea>
+        </div>
+
+        <div class="card">
+          <div class="zone-title">Contenteditable editor</div>
+          <div class="zone-note">Tap/click into the editable area, type, select, copy/cut/paste if possible, and change focus.</div>
+          <div
+            id="editorZone"
+            class="editor-zone"
+            contenteditable="true"
+            spellcheck="false"
+            autocorrect="off"
+            autocapitalize="none"
+            data-placeholder="Editable audit area"
+          ></div>
         </div>
       </div>
 
